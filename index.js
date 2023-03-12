@@ -1,4 +1,8 @@
 const fetch = require("node-fetch");
+const yargs = require("yargs/yargs");
+const { hideBin } = require("yargs/helpers");
+const argv = yargs(hideBin(process.argv)).argv;
+
 require("dotenv").config();
 
 let baseUrl = "https://dev.lunchmoney.app";
@@ -10,8 +14,8 @@ let txnsUrl = `${baseUrl}/v1/transactions`;
 let categoriesUrl = `${baseUrl}/v1/categories`;
 let txnUpdateUrl = `${baseUrl}/v1/transactions/`;
 
-const monthToRun = 2;
-const yearToRun = 2023;
+const monthToRun = argv.month || new Date().getMonth() + 1;
+const yearToRun = argv.year || new Date().getFullYear();
 
 const firstDay = new Date(yearToRun, monthToRun - 1, 1);
 const lastDay = new Date(yearToRun, monthToRun, 0);
@@ -75,9 +79,13 @@ async function splitTransaction(transaction, reimbursementCategoryId) {
     ],
   };
 
-  let splitResp = await putTransaction(transaction.id, updateObject);
-
-  console.log({ splitResp });
+  let splitResp;
+  try {
+    splitResp = await putTransaction(transaction.id, updateObject);
+  } catch (e) {
+    console.log(splitResp, e);
+    throw e;
+  }
 
   for (let splitId of splitResp.split) {
     await putTransaction(splitId, {
