@@ -130,15 +130,22 @@ async function splitTransaction(transaction, reimbursementCategoryId) {
     throw e;
   }
 
+  if (splitResp.error) {
+    console.log(splitResp);
+    return false;
+  }
+
   for (let splitId of splitResp.split) {
     if (dryRun) {
       console.log(`Would have marked split`, { transaction });
-      return;
+      return false;
     }
     await putTransaction(splitId, {
       transaction: { tags: ["Split"] },
     });
   }
+
+  return true
 }
 
 function filterByTag(txs, tag) {
@@ -226,8 +233,10 @@ async function main() {
     if (confirm) {
       prompt("Confirm? ");
     }
-    await logInSplitwise(swData, txnToSplit, true);
-    await splitTransaction(txnToSplit, reimbursementCategoryId);
+    let didSplit = await splitTransaction(txnToSplit, reimbursementCategoryId);
+    if (didSplit) {
+      await logInSplitwise(swData, txnToSplit, true);
+    }
   }
 
   for (let txnToReimburse of toReimburse) {
